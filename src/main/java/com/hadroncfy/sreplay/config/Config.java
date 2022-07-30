@@ -30,7 +30,7 @@ public class Config {
     public int itemsPerPage = 20;
     public boolean autoReconnect = true;
     public boolean debugCrash = false;
-    public Pattern playerNamePattern = Pattern.compile("^cam_.*$");
+    public String namePrefix = "cam_";
 
     public Formats formats = new Formats();
 }

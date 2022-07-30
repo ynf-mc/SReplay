@@ -2,6 +2,7 @@ package com.hadroncfy.sreplay.command;
 
 import com.google.gson.JsonParseException;
 import com.hadroncfy.sreplay.SReplayMod;
+import com.hadroncfy.sreplay.config.Config;
 import com.hadroncfy.sreplay.recording.Photographer;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -81,10 +82,10 @@ public class SReplayCommand {
             .then(literal("server")
                 .then(literal("start").executes(SReplayCommand::startServer))
                 .then(literal("stop").executes(SReplayCommand::stopServer)))
-            .then(literal("get")
-                .then(argument("fileName", StringArgumentType.greedyString())
-                .suggests(SReplayCommand::suggestRecordingFile)
-                .executes(SReplayCommand::getFile)))
+                .then(literal("get")
+                    .then(argument("fileName", StringArgumentType.greedyString())
+                                .suggests(SReplayCommand::suggestRecordingFile)
+                                .executes(SReplayCommand::getFile)))
             .then(literal("help").executes(SReplayCommand::help)
                 .then(Photographer.PARAM_MANAGER.buildHelpCommand()))
             .then(literal("crash")
@@ -169,61 +170,6 @@ public class SReplayCommand {
             p.getRecorder().removeMarker(id);
             src.getMinecraftServer().getPlayerManager().broadcastChatMessage(render(SReplayMod.getFormats().markerRemoved, ctx.getSource().getName(), name, Integer.toString(id + 1)), MessageType.CHAT, getSenderUUID(ctx));
         }
-        return 0;
-    }
-
-    private static int getFile(CommandContext<ServerCommandSource> ctx){
-        final String fName = StringArgumentType.getString(ctx, "fileName");
-        final File f = new File(SReplayMod.getConfig().savePath, fName);
-        if (f.exists()){
-            final String path = SReplayMod.getServer().addFile(f, SReplayMod.getConfig().downloadTimeout);
-            String url = "http://" + SReplayMod.getConfig().serverHostName;
-            final int port = SReplayMod.getConfig().serverPort;
-            if (port != 80){
-                url += ":" + port;
-            }
-            url += path;
-            ctx.getSource().sendFeedback(render(SReplayMod.getFormats().downloadUrl, url), false);
-        }
-        else {
-            ctx.getSource().sendError(render(SReplayMod.getFormats().fileNotFound, fName));
-            return 1;
-        }
-        return 0;
-    }
-
-    private static int startServer(CommandContext<ServerCommandSource> ctx){
-        final ServerCommandSource src = ctx.getSource();
-        final MinecraftServer server = src.getMinecraftServer();
-        try {
-            final ChannelFuture ch = SReplayMod.getServer().bind(SReplayMod.getConfig().serverListenAddress, SReplayMod.getConfig().serverPort);
-            ch.addListener(future -> {
-                if (future.isSuccess()){
-                    server.getPlayerManager().broadcastChatMessage(SReplayMod.getFormats().serverStarted, MessageType.CHAT, getSenderUUID(ctx));
-                }
-                else {
-                    src.sendError(render(SReplayMod.getFormats().serverStartFailed, future.cause().getMessage()));
-                }
-            });
-        }
-        catch(Exception e){
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
-    private static int stopServer(CommandContext<ServerCommandSource> ctx){
-        final ServerCommandSource src = ctx.getSource();
-        final MinecraftServer server = src.getMinecraftServer();
-        final ChannelFuture ch = SReplayMod.getServer().stop();
-        ch.addListener(future -> {
-            if (future.isSuccess()){
-                server.getPlayerManager().broadcastChatMessage(SReplayMod.getFormats().serverStopped, MessageType.CHAT, getSenderUUID(ctx));
-            }
-            else {
-                src.sendError(render(SReplayMod.getFormats().serverStopFailed, future.cause().getMessage()));
-            }
-        });
         return 0;
     }
 
@@ -320,6 +266,62 @@ public class SReplayCommand {
         }
     }
 
+    private static int getFile(CommandContext<ServerCommandSource> ctx){
+        final String fName = StringArgumentType.getString(ctx, "fileName");
+        final File f = new File(SReplayMod.getConfig().savePath, fName);
+        if (f.exists()){
+            final String path = SReplayMod.getServer().addFile(f, SReplayMod.getConfig().downloadTimeout);
+            String url = "http://" + SReplayMod.getConfig().serverHostName;
+            final int port = SReplayMod.getConfig().serverPort;
+            if (port != 80){
+                url += ":" + port;
+            }
+            url += path;
+            ctx.getSource().sendFeedback(render(SReplayMod.getFormats().downloadUrl, url), false);
+        }
+        else {
+            ctx.getSource().sendError(render(SReplayMod.getFormats().fileNotFound, fName));
+            return 1;
+        }
+        return 0;
+    }
+
+    private static int startServer(CommandContext<ServerCommandSource> ctx){
+        final ServerCommandSource src = ctx.getSource();
+        final MinecraftServer server = src.getMinecraftServer();
+        try {
+            final ChannelFuture ch = SReplayMod.getServer().bind(SReplayMod.getConfig().serverListenAddress, SReplayMod.getConfig().serverPort);
+            ch.addListener(future -> {
+                if (future.isSuccess()){
+                    server.getPlayerManager().broadcastChatMessage(SReplayMod.getFormats().serverStarted, MessageType.CHAT, getSenderUUID(ctx));
+                }
+                else {
+                    src.sendError(render(SReplayMod.getFormats().serverStartFailed, future.cause().getMessage()));
+                }
+            });
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    private static int stopServer(CommandContext<ServerCommandSource> ctx){
+        final ServerCommandSource src = ctx.getSource();
+        final MinecraftServer server = src.getMinecraftServer();
+        final ChannelFuture ch = SReplayMod.getServer().stop();
+        ch.addListener(future -> {
+            if (future.isSuccess()){
+                server.getPlayerManager().broadcastChatMessage(SReplayMod.getFormats().serverStopped, MessageType.CHAT, getSenderUUID(ctx));
+            }
+            else {
+                src.sendError(render(SReplayMod.getFormats().serverStopFailed, future.cause().getMessage()));
+            }
+        });
+        return 0;
+    }
+
+
     public static int confirm(CommandContext<ServerCommandSource> ctx) {
         final int code = IntegerArgumentType.getInteger(ctx, "code");
         if (!cm.confirm(ctx.getSource().getName(), code)) {
@@ -398,15 +400,10 @@ public class SReplayCommand {
     }
 
     public static int playerSpawn(CommandContext<ServerCommandSource> ctx) {
-        final String pName = StringArgumentType.getString(ctx, "player");
+        final String pName = getConfig().namePrefix + StringArgumentType.getString(ctx, "player");
         final ServerCommandSource src = ctx.getSource();
         final MinecraftServer server = src.getMinecraftServer();
 
-        Matcher m = SReplayMod.getConfig().playerNamePattern.matcher(pName);
-        if (!m.matches()) {
-            src.sendFeedback(SReplayMod.getFormats().invalidPlayerName, true);
-            return 0;
-        }
         if (pName.length() > 16) {
             src.sendFeedback(SReplayMod.getFormats().playerNameTooLong, true);
             return 0;

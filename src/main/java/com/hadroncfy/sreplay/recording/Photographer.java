@@ -129,12 +129,6 @@ public class Photographer extends ServerPlayerEntity implements ISizeLimitExceed
         saveFileName = name;
     }
 
-    private void setWatchDistance(int distance) {
-        recorder.onPacket(new ChunkLoadDistanceS2CPacket(distance));
-        this.reloadChunks(currentWatchDistance, rparam.watchDistance);
-        currentWatchDistance = rparam.watchDistance;
-    }
-
     private static int getChebyshevDistance(ChunkPos pos, int x, int z) {
         int i = pos.x - x;
         int j = pos.z - z;
@@ -156,10 +150,6 @@ public class Photographer extends ServerPlayerEntity implements ISizeLimitExceed
                         d > oldDistance && d <= newDistance);
             }
         }
-    }
-
-    public int getCurrentWatchDistance() {
-        return currentWatchDistance;
     }
 
     private void connect() throws IOException {
@@ -198,9 +188,6 @@ public class Photographer extends ServerPlayerEntity implements ISizeLimitExceed
         if (!recorder.isStopped()) {
             recorder.syncParam();
             updatePause();
-            if (currentWatchDistance != rparam.watchDistance) {
-                setWatchDistance(rparam.watchDistance);
-            }
         }
     }
 

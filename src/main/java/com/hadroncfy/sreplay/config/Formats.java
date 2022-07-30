@@ -31,7 +31,8 @@ public class Formats {
     nothingToConfirm = red("[SReplay] 无待确认的操作"),
     nothingToCancel = red("[SReplay] 无待取消的操作"),
     confirmingHint = new LiteralText("[SReplay] 使用")
-        .append(new LiteralText("/sreplayer confirm $1").setStyle(Style.EMPTY.withColor(Formatting.GOLD)))
+        .append(new LiteralText("/sreplay confirm $1")
+            .setStyle(Style.EMPTY.withColor(Formatting.GOLD).withClickEvent(new ClickEvent(Action.RUN_COMMAND, "/sreplay confirm $1"))))
         .append(new LiteralText("以确认此次操作")),
     deletedRecordingFile = new LiteralText("[SReplay] $1: 已删除录像文件$2"),
     failedToDeleteRecordingFile = red("[SReplay] $1: 删除录像文件$2失败：$3"),
